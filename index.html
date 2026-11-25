@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -114,8 +114,8 @@ function getProvider(){
 async function connect(){
   provider = getProvider();
   var res = await provider.connect();
-  wallet = res.publicKey.toString();
-  $("who").textContent = wallet.slice(0,4) + "..." + wallet.slice(-4);
+  wallet = (res.publicKey && res.publicKey.toBase58) ? res.publicKey.toBase58() : String(res.publicKey);
+  var _w = (wallet && wallet.toBase58) ? wallet.toBase58() : String(wallet); $("who").textContent = _w.slice(0,4) + "..." + _w.slice(-4);
   $("pre").style.display = "none";
   $("post").style.display = "block";
   await checkEligibility();
@@ -187,5 +187,6 @@ $("btnClaim").addEventListener("click", claim);
 </script>
 </body>
 </html>
+
 
 
